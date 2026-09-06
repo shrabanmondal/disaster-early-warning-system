@@ -24,8 +24,8 @@
         .btn-blue { background: #3b82f6; color: white; }
         .btn-blue:hover { background: #2563eb; }
         #error-msg { color: #f87171; font-size: 0.85rem; margin-top: 8px; display: none; }
-        .alerts-list { text-align: left; margin-top: 16px; max-height: 180px; overflow-y: auto; background: #0f172a; border-radius: 8px; padding: 10px; }
-        .alert-item { font-size: 0.8rem; padding: 6px 0; border-bottom: 1px solid #334155; }
+        .alerts-list { text-align: left; margin-top: 16px; max-height: 200px; overflow-y: auto; background: #0f172a; border-radius: 8px; padding: 10px; }
+        .alert-item { font-size: 0.8rem; padding: 8px 0; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
         .alert-item:last-child { border-bottom: none; }
     </style>
 </head>
@@ -80,7 +80,6 @@
         errorMsg.style.display = 'none';
 
         try {
-            // Using relative URL to work seamlessly across localhost and Render
             const response = await fetch('/api/telemetry');
             if (!response.ok) throw new Error('Network response failed');
             
@@ -94,6 +93,18 @@
             }
 
             data.alerts.forEach(alert => {
+                // Convert timestamp to user native time zone
+                const alertDate = new Date(alert.time);
+                const localTime = alertDate.toLocaleTimeString(undefined, { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                const localDate = alertDate.toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric'
+                });
+
                 const marker = L.circleMarker([alert.latitude, alert.longitude], {
                     radius: Math.max(alert.magnitude * 2.5, 4),
                     color: alert.magnitude >= 4.0 ? '#ef4444' : '#f59e0b',
@@ -101,12 +112,17 @@
                     fillOpacity: 0.6
                 });
 
-                marker.bindPopup(`<b>${alert.place}</b><br>Magnitude: ${alert.magnitude}`);
+                // Display native local date and time in map popups
+                marker.bindPopup(`<b>${alert.place}</b><br>Magnitude: ${alert.magnitude}<br>Time: ${localDate}, ${localTime}`);
                 markersGroup.addLayer(marker);
 
+                // Display native local time aligned to the right in the feed list
                 const item = document.createElement('div');
                 item.className = 'alert-item';
-                item.innerHTML = `<strong>M ${alert.magnitude}</strong> - ${alert.place}`;
+                item.innerHTML = `
+                    <span><strong>M ${alert.magnitude}</strong> - ${alert.place}</span>
+                    <span style="font-size:0.75rem; color:#94a3b8; white-space:nowrap; margin-left:8px;">${localTime}</span>
+                `;
                 container.appendChild(item);
             });
 
