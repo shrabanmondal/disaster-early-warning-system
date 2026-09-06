@@ -2,13 +2,12 @@ import sqlite3
 import requests
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 
 app = FastAPI(title="Disaster Early Warning System")
 
-# Enable CORS for mobile and cloud access
+# Enable CORS for cross-origin mobile and web access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -87,12 +86,13 @@ def get_telemetry(background_tasks: BackgroundTasks):
         })
     return {"status": "success", "alerts": alerts}
 
-# Serve root PWA application
+# Serve root PWA application and catch /index.html requests
 @app.get("/")
+@app.get("/index.html")
 def read_root():
     return FileResponse("index.html")
 
-# Serve manifest and service worker explicitly
+# Serve manifest and service worker
 @app.get("/manifest.json")
 def get_manifest():
     return FileResponse("manifest.json")
