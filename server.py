@@ -1,13 +1,14 @@
 import sqlite3
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 import requests
+from fastapi import FastAPI, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
 
-app = FastAPI(title="Disaster Warning System API")
+app = FastAPI(title="Disaster Early Warning System")
 
-# Enable CORS for cross-origin web access
+# Enable CORS for mobile and cloud access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,61 +17,86 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB_NAME = "disaster_alerts.db"
+DB_FILE = "disaster_alerts.db"
 
-@app.get("/")
-def read_root():
-    """Serves the PWA dashboard at http://localhost:8000/"""
-    return FileResponse("index.html")
-
-@app.get("/manifest.json")
-def get_manifest():
-    """Serves the PWA manifest"""
-    return FileResponse("manifest.json")
-
-@app.get("/sw.js")
-def get_service_worker():
-    """Serves the Service Worker script"""
-    return FileResponse("sw.js", media_type="application/javascript")
-
-@app.get("/alerts")
-def get_stored_alerts():
-    """Fetch stored earthquake records from SQLite database"""
-    conn = sqlite3.connect(DB_NAME)
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute("SELECT event_id, place, mag, event_time FROM alerts ORDER BY event_time DESC LIMIT 20")
-    rows = cursor.fetchall()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS alerts (
+            id TEXT PRIMARY KEY,
+            place TEXT,
+            magnitude REAL,
+            time INTEGER,
+            url TEXT,
+            longitude REAL,
+            latitude REAL
+        )
+    ''')
+    conn.commit()
     conn.close()
-    
-    alerts = []
-    for row in rows:
-        alerts.append({
-            "event_id": row[0],
-            "place": row[1],
-            "magnitude": row[2],
-            "event_time": row[3]
-        })
-    return {"alerts": alerts}
 
-@app.get("/live-usgs")
-def get_live_usgs(min_magnitude: float = 2.0):
-    """Fetch live seismic telemetry directly from USGS API"""
+init_db()
+
+def fetch_usgs_data():
     url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson"
     try:
         response = requests.get(url, timeout=10)
-        data = response.json()
-        
-        events = []
-        for feature in data.get("features", []):
-            mag = feature["properties"]["mag"]
-            if mag and mag >= min_magnitude:
-                events.append({
-                    "id": feature["id"],
-                    "place": feature["properties"]["place"],
-                    "magnitude": mag,
-                    "time": feature["properties"]["time"],
-                    "coordinates": feature["geometry"]["coordinates"]
-                })
-        return {"events": events}
+        if response.status_code == 200:
+            data = response.json()
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            for feature in data.get("features", []):
+                eq_id = feature["id"]
+                props = feature["properties"]
+                geom = feature["geometry"]
+                place = props.get("place", "Unknown location")
+                mag = props.get("mag", 0.0)
+                eq_time = props.get("time", 0)
+                eq_url = props.get("url", "")
+                lon, lat = geom["coordinates"][0], geom["coordinates"][1]
+
+                cursor.execute('''
+                    INSERT OR IGNORE INTO alerts (id, place, magnitude, time, url, longitude, latitude)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (eq_id, place, mag, eq_time, eq_url, lon, lat))
+            conn.commit()
+            conn.close()
     except Exception as e:
-        return {"error": str(e), "events": []}
+        print(f"Error fetching telemetry: {e}")
+
+@app.get("/api/telemetry")
+def get_telemetry(background_tasks: BackgroundTasks):
+    background_tasks.add_task(fetch_usgs_data)
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, place, magnitude, time, url, longitude, latitude FROM alerts ORDER BY time DESC LIMIT 50")
+    rows = cursor.fetchall()
+    conn.close()
+
+    alerts = []
+    for r in rows:
+        alerts.append({
+            "id": r[0],
+            "place": r[1],
+            "magnitude": r[2],
+            "time": r[3],
+            "url": r[4],
+            "longitude": r[5],
+            "latitude": r[6]
+        })
+    return {"status": "success", "alerts": alerts}
+
+# Serve root PWA application
+@app.get("/")
+def read_root():
+    return FileResponse("index.html")
+
+# Serve manifest and service worker explicitly
+@app.get("/manifest.json")
+def get_manifest():
+    return FileResponse("manifest.json")
+
+@app.get("/sw.js")
+def get_sw():
+    return FileResponse("sw.js", media_type="application/javascript")
