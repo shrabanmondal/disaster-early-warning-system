@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://disaster-early-warning-system-5m1q.onrender.com/sitemap.xml

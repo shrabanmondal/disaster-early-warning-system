@@ -7,7 +7,6 @@ import os
 
 app = FastAPI(title="Disaster Early Warning System")
 
-# Enable CORS for cross-origin mobile and web access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -109,3 +108,12 @@ def get_icon192():
 @app.get("/icon-512.png")
 def get_icon512():
     return FileResponse("icon-512.png", media_type="image/png")
+
+# Serve SEO assets
+@app.get("/sitemap.xml")
+def get_sitemap():
+    return FileResponse("sitemap.xml", media_type="application/xml")
+
+@app.get("/robots.txt")
+def get_robots():
+    return FileResponse("robots.txt", media_type="text/plain")
