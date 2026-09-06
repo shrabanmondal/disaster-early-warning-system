@@ -86,7 +86,7 @@ def get_telemetry(background_tasks: BackgroundTasks):
         })
     return {"status": "success", "alerts": alerts}
 
-# Serve root PWA application and catch /index.html requests
+# Serve root PWA application
 @app.get("/")
 @app.get("/index.html")
 def read_root():
@@ -100,3 +100,12 @@ def get_manifest():
 @app.get("/sw.js")
 def get_sw():
     return FileResponse("sw.js", media_type="application/javascript")
+
+# Serve PWA icons
+@app.get("/icon-192.png")
+def get_icon192():
+    return FileResponse("icon-192.png", media_type="image/png")
+
+@app.get("/icon-512.png")
+def get_icon512():
+    return FileResponse("icon-512.png", media_type="image/png")

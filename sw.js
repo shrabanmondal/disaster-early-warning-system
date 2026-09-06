@@ -1,8 +1,10 @@
-const CACHE_NAME = 'disaster-app-cache-v5';
+const CACHE_NAME = 'disaster-app-cache-v6';
 const FILES_TO_CACHE = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
