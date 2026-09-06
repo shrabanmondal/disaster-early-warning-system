@@ -93,12 +93,11 @@
             }
 
             data.alerts.forEach(alert => {
-                // Convert timestamp to user native time zone
+                // Convert raw epoch time to local date and time string
                 const alertDate = new Date(alert.time);
                 const localTime = alertDate.toLocaleTimeString(undefined, { 
                     hour: '2-digit', 
-                    minute: '2-digit',
-                    second: '2-digit'
+                    minute: '2-digit'
                 });
                 const localDate = alertDate.toLocaleDateString(undefined, {
                     month: 'short',
@@ -112,16 +111,16 @@
                     fillOpacity: 0.6
                 });
 
-                // Display native local date and time in map popups
-                marker.bindPopup(`<b>${alert.place}</b><br>Magnitude: ${alert.magnitude}<br>Time: ${localDate}, ${localTime}`);
+                // Display local date and time in map popups
+                marker.bindPopup(`<b>${alert.place}</b><br>Magnitude: ${alert.magnitude}<br>Date: ${localDate}<br>Time: ${localTime}`);
                 markersGroup.addLayer(marker);
 
-                // Display native local time aligned to the right in the feed list
+                // Display local date and time aligned on the right in the list
                 const item = document.createElement('div');
                 item.className = 'alert-item';
                 item.innerHTML = `
                     <span><strong>M ${alert.magnitude}</strong> - ${alert.place}</span>
-                    <span style="font-size:0.75rem; color:#94a3b8; white-space:nowrap; margin-left:8px;">${localTime}</span>
+                    <span style="font-size:0.75rem; color:#94a3b8; white-space:nowrap; margin-left:8px;">${localDate}, ${localTime}</span>
                 `;
                 container.appendChild(item);
             });
