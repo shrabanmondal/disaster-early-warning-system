@@ -104,6 +104,9 @@
                     day: 'numeric'
                 });
 
+                // Round magnitude to 1 decimal place
+                const magFormatted = Number(alert.magnitude).toFixed(1);
+
                 const marker = L.circleMarker([alert.latitude, alert.longitude], {
                     radius: Math.max(alert.magnitude * 2.5, 4),
                     color: alert.magnitude >= 4.0 ? '#ef4444' : '#f59e0b',
@@ -111,15 +114,15 @@
                     fillOpacity: 0.6
                 });
 
-                // Display local date and time in map popups
-                marker.bindPopup(`<b>${alert.place}</b><br>Magnitude: ${alert.magnitude}<br>Date: ${localDate}<br>Time: ${localTime}`);
+                // Display rounded magnitude, local date, and time in map popups
+                marker.bindPopup(`<b>${alert.place}</b><br>Magnitude: ${magFormatted}<br>Date: ${localDate}<br>Time: ${localTime}`);
                 markersGroup.addLayer(marker);
 
-                // Display local date and time aligned on the right in the list
+                // Display rounded magnitude, local date, and time in the list
                 const item = document.createElement('div');
                 item.className = 'alert-item';
                 item.innerHTML = `
-                    <span><strong>M ${alert.magnitude}</strong> - ${alert.place}</span>
+                    <span><strong>M ${magFormatted}</strong> - ${alert.place}</span>
                     <span style="font-size:0.75rem; color:#94a3b8; white-space:nowrap; margin-left:8px;">${localDate}, ${localTime}</span>
                 `;
                 container.appendChild(item);
