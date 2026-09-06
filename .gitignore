@@ -1,0 +1,16 @@
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local SQLite Database
+*.db
+disaster_alerts.db
+
+# Environment/Settings
+.vscode/
+.DS_Store
