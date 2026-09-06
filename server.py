@@ -117,3 +117,8 @@ def get_sitemap():
 @app.get("/robots.txt")
 def get_robots():
     return FileResponse("robots.txt", media_type="text/plain")
+
+# Google Search Console Verification Endpoint
+@app.get("/google74b355a77ef5c03e.html")
+def get_google_verification():
+    return FileResponse("google74b355a77ef5c03e.html")
